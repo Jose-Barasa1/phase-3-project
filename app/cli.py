@@ -1,164 +1,127 @@
+import time
 from app.database import init_db, Session
 from app.models import Medicine, User, Prescription
 
-# Initialize the database
 init_db()
 
-# Signup: Create a new user if username is not taken
+medicines_list = [
+    {'name': 'Aspirin', 'price': 3555.00, 'description': 'Pain reliever', 'category': 'Pain reliever'},
+    {'name': 'Paracetamol', 'price': 3456, 'description': 'Fever reducer', 'category': 'Pain reliever'},
+    {'name': 'Ibuprofen', 'price': 4000, 'description': 'Anti-inflammatory', 'category': 'Pain reliever'},
+    {'name': 'Amoxicillin', 'price': 1235, 'description': 'Antibiotic', 'category': 'Antibiotics'},
+    {'name': 'Ciprofloxacin', 'price': 1832, 'description': 'Antibiotic', 'category': 'Antibiotics'},
+    {'name': 'Cetirizine', 'price': 7123, 'description': 'Antihistamine', 'category': 'Allergy medicine'},
+    {'name': 'Loratadine', 'price': 8000, 'description': 'Allergy medicine', 'category': 'Allergy medicine'}
+]
+
 def signup(username, password):
     session = Session()
     if session.query(User).filter(User.username == username).first():
-        print("Username taken.")
+        print("Username already taken.")
     else:
-        user = User(username=username, password=password)
-        session.add(user)
+        session.add(User(username=username, password=password))
         session.commit()
-        print(f"User '{username}' created successfully!")
+        print(f"User {username} created successfully!")
 
-# Login: Check if username and password match an existing user
 def login(username, password):
     session = Session()
-    user = session.query(User).filter(User.username == username, User.password == password).first()
-    if user:
-        print("Login successful!")
-        return user
-    print("Invalid credentials.")
-    return None
+    return session.query(User).filter(User.username == username, User.password == password).first()
 
-# Generate diagnosis based on user input
 def generate_diagnosis(sickness):
-    mapping = {'headache': 'Migraine', 'fever': 'Flu', 'cough': 'Cold', 'allergy': 'Allergic reaction'}
-    return mapping.get(sickness.lower(), 'Unknown sickness')
+    diagnosis = {'headache': 'Migraine or tension headache', 'fever': 'Flu or viral infection', 'cough': 'Cold or respiratory infection', 'allergy': 'Allergic reaction'}
+    return diagnosis.get(sickness.lower(), 'Unknown sickness')
 
-# Create a new medicine in the database
-def create_medicine(name, price, description, category):
+# Function to delete a user's profile
+def delete_user(logged_in_user):
     session = Session()
-    if session.query(Medicine).filter(Medicine.name == name).first():
-        print(f"Medicine '{name}' already exists.")
-    else:
-        session.add(Medicine(name=name, price=price, description=description, category=category))
+    confirm_delete = input(f"Are you sure you want to delete the profile of {logged_in_user.username}? (yes/no): ").lower()
+    if confirm_delete == 'yes':
+        # Deleting the user
+        session.delete(logged_in_user)
         session.commit()
-        print(f"Medicine '{name}' created successfully.")
-
-# Find Medicine by Category
-def find_medicine_by_category(category):
-    session = Session()
-    medicines = session.query(Medicine).filter(Medicine.category.ilike(f'%{category}%')).all()
-    if medicines:
-        for med in medicines:
-            print(f"{med.name} - {med.price} Ksh - {med.description} ({med.category})")
+        print(f"User {logged_in_user.username} has been deleted successfully.")
+        return None  # Return None to log out the user
     else:
-        print(f"No medicines found under the category: {category}")
+        print("User deletion canceled.")
+    return logged_in_user  # Return the logged-in user if they canceled
 
-# Find Medicine by Name
-def find_medicine_by_name(name):
-    session = Session()
-    medicine = session.query(Medicine).filter(Medicine.name.ilike(f'%{name}%')).first()
-    if medicine:
-        print(f"{medicine.name} - {medicine.price} Ksh - {medicine.description} ({medicine.category})")
-    else:
-        print(f"Medicine '{name}' not found.")
-
-# Main menu after login
 def start_cli():
     session = Session()
     logged_in_user = None
-
     while True:
         if logged_in_user is None:
-            print("\nWelcome to MedHub CLI!")
-            print("1. Signup")
-            print("2. Login")
-            choice = input("Enter your choice: ")
-
+            print("\n1. Signup\n2. Exit")
+            choice = input("Choice: ")
             if choice == '1':
-                username = input("Enter username: ")
-                password = input("Enter password: ")
+                username = input("Username: ")
+                password = input("Password: ")
                 signup(username, password)
-                print("Please login now.")
-                username = input("Enter username: ")
-                password = input("Enter password: ")
-                logged_in_user = login(username, password)  # Log in the user
-                if logged_in_user:
-                    continue  # If login is successful, continue to the main menu
+                logged_in_user = login(username, password)
             elif choice == '2':
-                print("Exiting...")
                 break
             else:
-                print("Invalid option.")
+                print("Invalid choice.")
         else:
-            # If the user is logged in, show the main menu
-            print(f"\nWelcome {logged_in_user.username}!")
-            print("1. View all medicines")
-            print("2. Find a medicine by name")
-            print("3. Find medicines by category")
-            print("4. Make a diagnosis and get a prescription")
-            print("5. View user info")
-            print("6. Log out")
-            print("7. Exit")
-            sub_choice = input("Enter your choice: ")
+            print(f"\nWelcome {logged_in_user.username}!\n1. View medicines\n2. Find medicine\n3. Add medicine\n4. Diagnose and prescribe\n5. User info\n6. Delete profile\n7. Logout\n8. Exit")
+            sub_choice = input("Choice: ")
 
             if sub_choice == '1':
-                medicines = Medicine.get_all(session)
-                for med in medicines:
+                for med in Medicine.get_all(session): 
                     print(f"{med.name} - {med.price} Ksh - {med.description} ({med.category})")
-
             elif sub_choice == '2':
-                medicine_name = input("Enter medicine name: ")
-                find_medicine_by_name(medicine_name)
-
+                name = input("Enter medicine name: ")
+                medicine = Medicine.get_by_name(session, name)
+                if medicine: 
+                    print(f"Found {name}: {medicine}")
+                else: 
+                    print(f"{name} not found.")
             elif sub_choice == '3':
-                category = input("Enter medicine category (e.g. Pain reliever, Antibiotics, Allergy medicine): ")
-                find_medicine_by_category(category)
-
+                name = input("Name: ")
+                price = float(input("Price: "))
+                description = input("Description: ")
+                category = input("Category: ")
+                session.add(Medicine(name=name, price=price, description=description, category=category))
+                session.commit()
+                print(f"Medicine {name} added.")
             elif sub_choice == '4':
-                sickness = input("Describe your sickness: ")
+                sickness = input("Describe sickness: ")
                 print("Diagnosing...")
+                time.sleep(2)  # Delay for effect
                 diagnosis = generate_diagnosis(sickness)
                 print(f"Diagnosis: {diagnosis}")
-                prescribed_medicines = []
-                if "headache" in diagnosis:
-                    prescribed_medicines.append("Aspirin")
-                    prescribed_medicines.append("Ibuprofen")
-                if "fever" in diagnosis:
-                    prescribed_medicines.append("Paracetamol")
-                    prescribed_medicines.append("Ciprofloxacin")
+                time.sleep(2)  # Wait before showing prescription
 
-                for med in prescribed_medicines:
+                print("Suggested medicines based on diagnosis:")
+                time.sleep(1)
+                prescribed_meds = ['Aspirin', 'Paracetamol'] if 'headache' in diagnosis else ['Ibuprofen', 'Ciprofloxacin']
+                for med in prescribed_meds:
                     print(f"- {med}")
+                    time.sleep(1)  # Pause between each medicine
 
-                total_price = 0
-                for medicine_name in prescribed_medicines:
-                    medicine = session.query(Medicine).filter(Medicine.name == medicine_name).first()
-                    if medicine:
-                        total_price += medicine.price
+                total = sum(med['price'] for med in medicines_list if med['name'] in prescribed_meds)
+                print(f"\nTotal: {total} Ksh")
+                time.sleep(2)  # Pause before payment confirmation
 
-                print(f"\nTotal price for medicines: {total_price} Ksh")
-                confirm_payment = input(f"Do you confirm the payment of {total_price} Ksh? (yes/no): ")
+                confirm_payment = input(f"Confirm payment of {total} Ksh? (yes/no): ")
                 if confirm_payment.lower() == 'yes':
-                    print("Payment successful!")
-                    prescription = Prescription(user_id=logged_in_user.id, medicines=prescribed_medicines, total_price=total_price)
+                    print("Processing payment...")
+                    time.sleep(2)  # Simulate payment processing time
+                    prescription = Prescription(user_id=logged_in_user.id, medicines=prescribed_meds, total_price=total)
                     session.add(prescription)
                     session.commit()
-                    print("Prescription saved!")
+                    print("Payment successful! Prescription saved.")
                 else:
-                    print("Payment canceled. No prescription created.")
-
+                    print("Payment canceled.")
             elif sub_choice == '5':
                 print(f"User: {logged_in_user.username}")
-
-            elif sub_choice == '6':  # Log out the user
-                print(f"Logging out {logged_in_user.username}...")
-                logged_in_user = None  # Reset logged-in user
-
+            elif sub_choice == '6':
+                logged_in_user = delete_user(logged_in_user)  # Call the delete function
             elif sub_choice == '7':
-                print("Exiting...")
+                logged_in_user = None  # Log out the user
+            elif sub_choice == '8':
                 break
-
             else:
-                print("Invalid option.")
+                print("Invalid choice.")
 
-# Run the CLI app
 if __name__ == "__main__":
     start_cli()
-
