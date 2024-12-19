@@ -1,5 +1,5 @@
 # MedHub CLI Application
-'' By Jose' Barasa''
+ * By Jose' Barasa *
 
 ## Project Description
  MedHub is a Python-based Command-Line Interface (CLI) application designed for managing medical data, including user profiles, medicines, and prescriptions. The application leverages SQLAlchemy ORM to interact with a relational database, enabling users to sign up, log in, add and view medicines, receive diagnoses, and generate prescriptions.
@@ -31,7 +31,9 @@ Clone the Repository: Clone this repository to your local machine.
 ##### bash
 Copy code
 git clone <git@github.com:Jose-Barasa1/phase-3-project.git>
-cd medhub
+
+ cd medhub
+
 Install Dependencies: Use the pip or pipenv command to install the dependencies.
 
 - Database Initialization: The database is initialized automatically upon the first run of the application. It uses SQLAlchemy for data modeling.
