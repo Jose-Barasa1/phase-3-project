@@ -1,43 +1,37 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
+from app.database import Base
 
-Base = declarative_base()
-
-# Model: User
+# Define the User model for registration and login
 class User(Base):
     __tablename__ = 'users'
+
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
 
+    # Relationship to prescriptions
+    prescriptions = relationship('Prescription', back_populates='user')
+
     def __repr__(self):
         return f"<User(id={self.id}, username={self.username})>"
 
-    @classmethod
-    def create(cls, session, username, password):
-        user = cls(username=username, password=password)
-        session.add(user)
-        session.commit()
-        return user
-
-    @classmethod
-    def find_by_username(cls, session, username):
-        return session.query(cls).filter_by(username=username).first()
-
-# Model: Medicine
+# Define the Medicine model for storing medicine details
 class Medicine(Base):
     __tablename__ = 'medicines'
+
     id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True, nullable=False)
-    description = Column(String, nullable=False)
+    name = Column(String, nullable=False)
+    price = Column(Float, nullable=False)
+    description = Column(String, nullable=True)
+    category = Column(String, nullable=True)
 
     def __repr__(self):
-        return f"<Medicine(id={self.id}, name={self.name}, description={self.description})>"
+        return f"<Medicine(name={self.name}, price={self.price}, category={self.category})>"
 
     @classmethod
-    def create(cls, session, name, description):
-        medicine = cls(name=name, description=description)
+    def create(cls, session, name, price, description, category):
+        medicine = cls(name=name, price=price, description=description, category=category)
         session.add(medicine)
         session.commit()
 
@@ -46,27 +40,25 @@ class Medicine(Base):
         return session.query(cls).all()
 
     @classmethod
-    def search_by_name(cls, session, name):
-        return session.query(cls).filter(Medicine.name.like(f'%{name}%')).all()
+    def get_by_name(cls, session, name):
+        return session.query(cls).filter(cls.name == name).first()
 
-# Model: Prescription
+# Define the Prescription model to store user prescriptions
 class Prescription(Base):
     __tablename__ = 'prescriptions'
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'))
-    diagnosis = Column(String, nullable=False)
-    prescribed_medicines = Column(String, nullable=False)
 
-    user = relationship("User", back_populates="prescriptions")
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    total_price = Column(Float, nullable=False)
+    medicines = Column(String, nullable=False)  # Store medicine names as comma-separated string
+
+    # Relationship to User model
+    user = relationship('User', back_populates='prescriptions')
+
+    def __init__(self, user_id, medicines, total_price):
+        self.user_id = user_id
+        self.medicines = ', '.join(medicines)  # Join list of medicines into a string
+        self.total_price = total_price
 
     def __repr__(self):
-        return f"<Prescription(id={self.id}, user_id={self.user_id}, diagnosis={self.diagnosis})>"
-
-    @classmethod
-    def create(cls, session, user_id, diagnosis, prescribed_medicines):
-        prescription = cls(user_id=user_id, diagnosis=diagnosis, prescribed_medicines=prescribed_medicines)
-        session.add(prescription)
-        session.commit()
-
-# Create relationship back reference in User
-User.prescriptions = relationship("Prescription", back_populates="user")
+        return f"<Prescription(id={self.id}, user_id={self.user_id}, total_price={self.total_price})>"
