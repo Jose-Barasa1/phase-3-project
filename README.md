@@ -43,7 +43,8 @@ Install Dependencies: Use the pip or pipenv command to install the dependencies.
 
  ###### bash
 Copy code
-*** python app/cli.py***
+*** pipenv run python -m app.cli***
+
 Follow the on-screen prompts to interact with the application.
 
 ###### Application Workflow
