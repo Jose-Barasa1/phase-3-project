@@ -62,6 +62,31 @@ def find_medicine(session, name):
                 return
         print(f"{name} not found.")
 
+def display_user_info(logged_in_user, session):
+    print(f"User: {logged_in_user.username}")
+    print(f"Prescriptions: ")
+    prescriptions = session.query(Prescription).filter(Prescription.user_id == logged_in_user.id).all()
+    if prescriptions:
+        for prescription in prescriptions:
+            print(f"- Prescription ID: {prescription.id}")
+            print(f"  Medicines: {', '.join(prescription.medicines)}")
+            print(f"  Total Price: {prescription.total_price} Ksh")
+    else:
+        print("No prescriptions found.")
+
+def checkout(prescribed_meds):
+    total = sum(med['price'] for med in medicines_list if med['name'] in prescribed_meds)
+    print(f"\nTotal price for prescribed medicines: {total} Ksh")
+    confirm_payment = input(f"Confirm payment of {total} Ksh? (yes/no): ").lower()
+    if confirm_payment == 'yes':
+        print("Processing payment...")
+        time.sleep(2)  # Simulate payment processing time
+        print("Payment successful!")
+        return total
+    else:
+        print("Payment canceled.")
+        return 0
+
 def start_cli():
     session = Session()
     logged_in_user = None
@@ -111,8 +136,15 @@ def start_cli():
                 prescribed_meds = ['Aspirin', 'Paracetamol'] if 'headache' in diagnosis else ['Ibuprofen', 'Ciprofloxacin']
                 for med in prescribed_meds:
                     print(f"- {med}")
+
+                # Proceed to checkout and payment
+                if checkout(prescribed_meds):
+                    prescription = Prescription(user_id=logged_in_user.id, medicines=prescribed_meds, total_price=sum(med['price'] for med in medicines_list if med['name'] in prescribed_meds))
+                    session.add(prescription)
+                    session.commit()
+                    print("Prescription saved.")
             elif sub_choice == '5':
-                print(f"User: {logged_in_user.username}")
+                display_user_info(logged_in_user, session)
             elif sub_choice == '6':
                 logged_in_user = delete_user(logged_in_user)
             elif sub_choice == '7':
