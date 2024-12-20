@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# Database URI (you can change this if you're using another DB, for now, it's SQLite)
+# Database URI 
 DATABASE_URI = 'sqlite:///medhub.db'
 
 # Create the engine to connect to the database

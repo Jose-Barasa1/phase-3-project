@@ -34,9 +34,11 @@ def generate_diagnosis(sickness):
 # Function to delete a user's profile
 def delete_user(logged_in_user):
     session = Session()
+    logged_in_user = session.merge(logged_in_user)
     confirm_delete = input(f"Are you sure you want to delete the profile of {logged_in_user.username}? (yes/no): ").lower()
     if confirm_delete == 'yes':
         # Deleting the user
+        session.query(Prescription).filter(Prescription.user_id == logged_in_user.id).delete()
         session.delete(logged_in_user)
         session.commit()
         print(f"User {logged_in_user.username} has been deleted successfully.")
