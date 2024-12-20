@@ -13,7 +13,7 @@ class User(Base):
     # Relationship to prescriptions
     prescriptions = relationship('Prescription', back_populates='user')
 
-    def __repr__(self):
+    def __repo__(self):
         return f"<User(id={self.id}, username={self.username})>"
 
 # Define the Medicine model for storing medicine details
@@ -60,5 +60,5 @@ class Prescription(Base):
         self.medicines = ', '.join(medicines)  # Join list of medicines into a string
         self.total_price = total_price
 
-    def __repr__(self):
+    def __repo__(self):
         return f"<Prescription(id={self.id}, user_id={self.user_id}, total_price={self.total_price})>"

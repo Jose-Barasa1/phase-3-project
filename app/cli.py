@@ -25,41 +25,47 @@ def signup(username, password):
 
 def login(username, password):
     session = Session()
-    return session.query(User).filter(User.username == username, User.password == password).first()
+    user = session.query(User).filter(User.username == username, User.password == password).first()
+    if user:
+        print(f"Welcome back, {user.username}!")
+    return user
 
 def generate_diagnosis(sickness):
     diagnosis = {'headache': 'Migraine or tension headache', 'fever': 'Flu or viral infection', 'cough': 'Cold or respiratory infection', 'allergy': 'Allergic reaction'}
     return diagnosis.get(sickness.lower(), 'Unknown sickness')
 
-# Function to delete a user's profile
 def delete_user(logged_in_user):
     session = Session()
     logged_in_user = session.merge(logged_in_user)
     confirm_delete = input(f"Are you sure you want to delete the profile of {logged_in_user.username}? (yes/no): ").lower()
     if confirm_delete == 'yes':
-        # Deleting the user
         session.query(Prescription).filter(Prescription.user_id == logged_in_user.id).delete()
         session.delete(logged_in_user)
         session.commit()
         print(f"User {logged_in_user.username} has been deleted successfully.")
-        return None  # Return None to log out the user
+        return None
     else:
         print("User deletion canceled.")
-    return logged_in_user  # Return the logged-in user if they canceled
+    return logged_in_user
 
 def start_cli():
     session = Session()
     logged_in_user = None
     while True:
         if logged_in_user is None:
-            print("\n1. Signup\n2. Exit")
+            print("\n1. Login\n2. Signup\n3. Exit")
             choice = input("Choice: ")
             if choice == '1':
                 username = input("Username: ")
                 password = input("Password: ")
-                signup(username, password)
                 logged_in_user = login(username, password)
+                if not logged_in_user:
+                    print("Login failed. Please try again.")
             elif choice == '2':
+                username = input("Username: ")
+                password = input("Password: ")
+                signup(username, password)
+            elif choice == '3':
                 break
             else:
                 print("Invalid choice.")
@@ -88,26 +94,26 @@ def start_cli():
             elif sub_choice == '4':
                 sickness = input("Describe sickness: ")
                 print("Diagnosing...")
-                time.sleep(2)  # Delay for effect
+                time.sleep(2)
                 diagnosis = generate_diagnosis(sickness)
                 print(f"Diagnosis: {diagnosis}")
-                time.sleep(2)  # Wait before showing prescription
+                time.sleep(2)
 
                 print("Suggested medicines based on diagnosis:")
                 time.sleep(1)
                 prescribed_meds = ['Aspirin', 'Paracetamol'] if 'headache' in diagnosis else ['Ibuprofen', 'Ciprofloxacin']
                 for med in prescribed_meds:
                     print(f"- {med}")
-                    time.sleep(1)  # Pause between each medicine
+                    time.sleep(1)
 
                 total = sum(med['price'] for med in medicines_list if med['name'] in prescribed_meds)
                 print(f"\nTotal: {total} Ksh")
-                time.sleep(2)  # Pause before payment confirmation
+                time.sleep(2)
 
                 confirm_payment = input(f"Confirm payment of {total} Ksh? (yes/no): ")
                 if confirm_payment.lower() == 'yes':
                     print("Processing payment...")
-                    time.sleep(2)  # Simulate payment processing time
+                    time.sleep(2)
                     prescription = Prescription(user_id=logged_in_user.id, medicines=prescribed_meds, total_price=total)
                     session.add(prescription)
                     session.commit()
@@ -117,7 +123,7 @@ def start_cli():
             elif sub_choice == '5':
                 print(f"User: {logged_in_user.username}")
             elif sub_choice == '6':
-                logged_in_user = delete_user(logged_in_user)  # Call the delete function
+                logged_in_user = delete_user(logged_in_user)
             elif sub_choice == '7':
                 logged_in_user = None  # Log out the user
             elif sub_choice == '8':
