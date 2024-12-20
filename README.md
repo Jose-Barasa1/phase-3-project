@@ -20,7 +20,7 @@
 
 ##### bash
 Copy code
-***pip install -r requirements.txt***
+***pipenv install sqlalchemy***
 Alternatively, you can use pipenv:
 
 ##### bash
