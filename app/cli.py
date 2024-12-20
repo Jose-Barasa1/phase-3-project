@@ -25,10 +25,7 @@ def signup(username, password):
 
 def login(username, password):
     session = Session()
-    user = session.query(User).filter(User.username == username, User.password == password).first()
-    if user:
-        print(f"Welcome back, {user.username}!")
-    return user
+    return session.query(User).filter(User.username == username, User.password == password).first()
 
 def generate_diagnosis(sickness):
     diagnosis = {'headache': 'Migraine or tension headache', 'fever': 'Flu or viral infection', 'cough': 'Cold or respiratory infection', 'allergy': 'Allergic reaction'}
@@ -37,16 +34,33 @@ def generate_diagnosis(sickness):
 def delete_user(logged_in_user):
     session = Session()
     logged_in_user = session.merge(logged_in_user)
-    confirm_delete = input(f"Are you sure you want to delete the profile of {logged_in_user.username}? (yes/no): ").lower()
-    if confirm_delete == 'yes':
+    if input(f"Delete {logged_in_user.username}? (yes/no): ").lower() == 'yes':
         session.query(Prescription).filter(Prescription.user_id == logged_in_user.id).delete()
         session.delete(logged_in_user)
         session.commit()
-        print(f"User {logged_in_user.username} has been deleted successfully.")
+        print(f"User {logged_in_user.username} deleted.")
         return None
-    else:
-        print("User deletion canceled.")
     return logged_in_user
+
+def view_medicines(session):
+    medicines_in_db = Medicine.get_all(session)
+    all_medicines = medicines_in_db + medicines_list
+    for med in all_medicines:
+        if isinstance(med, Medicine):
+            print(f"{med.name} - {med.price} Ksh - {med.description} ({med.category})")
+        else:
+            print(f"{med['name']} - {med['price']} Ksh - {med['description']} ({med['category']})")
+
+def find_medicine(session, name):
+    medicine = Medicine.get_by_name(session, name)
+    if medicine:
+        print(f"Found in database: {medicine.name} - {medicine.price} Ksh - {medicine.description} ({medicine.category})")
+    else:
+        for med in medicines_list:
+            if med['name'].lower() == name.lower():
+                print(f"Found in predefined list: {med['name']} - {med['price']} Ksh - {med['description']} ({med['category']})")
+                return
+        print(f"{name} not found.")
 
 def start_cli():
     session = Session()
@@ -60,7 +74,7 @@ def start_cli():
                 password = input("Password: ")
                 logged_in_user = login(username, password)
                 if not logged_in_user:
-                    print("Login failed. Please try again.")
+                    print("Login failed.")
             elif choice == '2':
                 username = input("Username: ")
                 password = input("Password: ")
@@ -70,19 +84,14 @@ def start_cli():
             else:
                 print("Invalid choice.")
         else:
-            print(f"\nWelcome {logged_in_user.username}!\n1. View medicines\n2. Find medicine\n3. Add medicine\n4. Diagnose and prescribe\n5. User info\n6. Delete profile\n7. Logout\n8. Exit")
+            print(f"\nWelcome {logged_in_user.username}!\n1. View medicines\n2. Find medicine\n3. Add medicine\n4. Diagnose\n5. User info\n6. Delete profile\n7. Logout\n8. Exit")
             sub_choice = input("Choice: ")
 
             if sub_choice == '1':
-                for med in Medicine.get_all(session): 
-                    print(f"{med.name} - {med.price} Ksh - {med.description} ({med.category})")
+                view_medicines(session)
             elif sub_choice == '2':
                 name = input("Enter medicine name: ")
-                medicine = Medicine.get_by_name(session, name)
-                if medicine: 
-                    print(f"Found {name}: {medicine}")
-                else: 
-                    print(f"{name} not found.")
+                find_medicine(session, name)
             elif sub_choice == '3':
                 name = input("Name: ")
                 price = float(input("Price: "))
@@ -99,33 +108,15 @@ def start_cli():
                 print(f"Diagnosis: {diagnosis}")
                 time.sleep(2)
 
-                print("Suggested medicines based on diagnosis:")
-                time.sleep(1)
                 prescribed_meds = ['Aspirin', 'Paracetamol'] if 'headache' in diagnosis else ['Ibuprofen', 'Ciprofloxacin']
                 for med in prescribed_meds:
                     print(f"- {med}")
-                    time.sleep(1)
-
-                total = sum(med['price'] for med in medicines_list if med['name'] in prescribed_meds)
-                print(f"\nTotal: {total} Ksh")
-                time.sleep(2)
-
-                confirm_payment = input(f"Confirm payment of {total} Ksh? (yes/no): ")
-                if confirm_payment.lower() == 'yes':
-                    print("Processing payment...")
-                    time.sleep(2)
-                    prescription = Prescription(user_id=logged_in_user.id, medicines=prescribed_meds, total_price=total)
-                    session.add(prescription)
-                    session.commit()
-                    print("Payment successful! Prescription saved.")
-                else:
-                    print("Payment canceled.")
             elif sub_choice == '5':
                 print(f"User: {logged_in_user.username}")
             elif sub_choice == '6':
                 logged_in_user = delete_user(logged_in_user)
             elif sub_choice == '7':
-                logged_in_user = None  # Log out the user
+                logged_in_user = None
             elif sub_choice == '8':
                 break
             else:
